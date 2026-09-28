@@ -54,7 +54,7 @@ A modern, premium, mobile-first glassmorphic GUI framework built natively for Lu
 ## Quick Start Example
 
 ```lua
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/<OWNER>/<REPO>/main/dist/bundle.luau"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/badoyn915-debug/universal-roblox-ui/main/dist/bundle.luau"))()
 
 local Window = Library:CreateWindow({
     Title = "Universal UI",

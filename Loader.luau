@@ -3,7 +3,7 @@
     Public loader for initializing the Universal UI Library.
 ]=]
 
-local GITHUB_URL = "https://raw.githubusercontent.com/OWNER_PLACEHOLDER/universal-roblox-ui/main/dist/bundle.luau"
+local GITHUB_URL = "https://raw.githubusercontent.com/badoyn915-debug/universal-roblox-ui/main/dist/bundle.luau"
 
 local success, source = pcall(function()
     return game:HttpGet(GITHUB_URL, true)

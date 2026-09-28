@@ -32,7 +32,8 @@ function TopBar.new(config, Theme, Animation, Utility, Assets)
     })
     
     -- Icon (if provided or present in config/Assets)
-    local iconId = config.Icon or Assets.Logo or Assets.MainIcon
+    local rawIcon = config.Icon or (Assets and Assets.Logo) or (Assets and Assets.MainIcon)
+    local iconId = (Assets and Assets.Resolve) and Assets.Resolve(rawIcon) or rawIcon
     local iconImage = nil
     if iconId and iconId ~= "" then
         iconImage = Utility.Create("ImageLabel", {
