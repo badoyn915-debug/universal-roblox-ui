@@ -4,7 +4,7 @@
 
 local function loadBundle()
     local success, res = pcall(function()
-        return loadfile("dist/bundle.luau")()
+        return loadfile("dist/bundle.lua")()
     end)
     if success and res then
         return res

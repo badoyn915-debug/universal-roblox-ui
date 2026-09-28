@@ -18,35 +18,35 @@ A modern, premium, mobile-first glassmorphic GUI framework built natively for Lu
 ## Project Structure
 
 ```
-├── Loader.luau                  # Public GitHub raw loader
-├── init.luau                    # Entry point for local execution
+├── Loader.lua                  # Public GitHub raw loader
+├── init.lua                    # Entry point for local execution
 ├── build.py                     # Standalone bundler utility
 ├── dist/
-│   └── bundle.luau              # Compiled single-file distribution
+│   └── bundle.lua              # Compiled single-file distribution
 └── src/
-    ├── Library.luau             # Core library orchestrator
-    ├── Assets.luau              # Vector icon configuration
-    ├── Theme.luau               # Theme registry & dynamic updater
-    ├── Animation.luau           # TweenService animation manager
-    ├── Utility.luau             # UI helper functions, touch/mouse dragging
+    ├── Library.lua             # Core library orchestrator
+    ├── Assets.lua              # Vector icon configuration
+    ├── Theme.lua               # Theme registry & dynamic updater
+    ├── Animation.lua           # TweenService animation manager
+    ├── Utility.lua             # UI helper functions, touch/mouse dragging
     ├── UI/
-    │   ├── Window.luau          # Root window with screen clamping & minimization
-    │   ├── TopBar.luau          # Title, subtitle, icon, control buttons
-    │   ├── Sidebar.luau         # Tab list with animated indicators
-    │   ├── Tab.luau             # Scrollable page container with CanvasGroup transitions
-    │   ├── Section.luau         # Component group with dividers and headers
-    │   └── Notifications.luau   # Floating toast system with duration progress bar
+    │   ├── Window.lua          # Root window with screen clamping & minimization
+    │   ├── TopBar.lua          # Title, subtitle, icon, control buttons
+    │   ├── Sidebar.lua         # Tab list with animated indicators
+    │   ├── Tab.lua             # Scrollable page container with CanvasGroup transitions
+    │   ├── Section.lua         # Component group with dividers and headers
+    │   └── Notifications.lua   # Floating toast system with duration progress bar
     └── Components/
-        ├── Button.luau          # Button with press & hover animations
-        ├── Toggle.luau          # Animated sliding toggle switch
-        ├── Slider.luau          # Mouse & touch slider with step increments
-        ├── Dropdown.luau        # Single-selection expandable menu
-        ├── MultiDropdown.luau   # Multi-selection menu with count badges
-        ├── TextBox.luau         # Input field with focus ring & clear button
-        ├── Keybind.luau         # Key listener & binder
-        ├── ColorPicker.luau     # RGB palette sliders with live swatch
-        ├── Label.luau           # Read-only information card
-        └── Paragraph.luau       # Auto-sizing multiline text display
+        ├── Button.lua          # Button with press & hover animations
+        ├── Toggle.lua          # Animated sliding toggle switch
+        ├── Slider.lua          # Mouse & touch slider with step increments
+        ├── Dropdown.lua        # Single-selection expandable menu
+        ├── MultiDropdown.lua   # Multi-selection menu with count badges
+        ├── TextBox.lua         # Input field with focus ring & clear button
+        ├── Keybind.lua         # Key listener & binder
+        ├── ColorPicker.lua     # RGB palette sliders with live swatch
+        ├── Label.lua           # Read-only information card
+        └── Paragraph.lua       # Auto-sizing multiline text display
 ```
 
 ---
@@ -54,7 +54,7 @@ A modern, premium, mobile-first glassmorphic GUI framework built natively for Lu
 ## Quick Start Example
 
 ```lua
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/badoyn915-debug/universal-roblox-ui/main/dist/bundle.luau"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/badoyn915-debug/universal-roblox-ui/main/dist/bundle.lua"))()
 
 local Window = Library:CreateWindow({
     Title = "Universal UI",

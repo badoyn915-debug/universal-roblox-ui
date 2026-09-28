@@ -8,7 +8,7 @@ print("[UniversalUI] Initializing Universal Roblox UI...")
 print("[UniversalUI] Version: 1.0.0 | GitHub: badoyn915-debug/universal-roblox-ui")
 print("[UniversalUI] Downloading bundle from GitHub raw...")
 
-local GITHUB_URL = "https://raw.githubusercontent.com/badoyn915-debug/universal-roblox-ui/main/dist/bundle.luau"
+local GITHUB_URL = "https://raw.githubusercontent.com/badoyn915-debug/universal-roblox-ui/main/dist/bundle.lua"
 
 local success, source = pcall(function()
     return game:HttpGet(GITHUB_URL, true)

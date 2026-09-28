@@ -8,27 +8,27 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 modules = [
-    ("Assets", "src/Assets.luau"),
-    ("Theme", "src/Theme.luau"),
-    ("Animation", "src/Animation.luau"),
-    ("Utility", "src/Utility.luau"),
-    ("Components/Button", "src/Components/Button.luau"),
-    ("Components/Toggle", "src/Components/Toggle.luau"),
-    ("Components/Slider", "src/Components/Slider.luau"),
-    ("Components/Dropdown", "src/Components/Dropdown.luau"),
-    ("Components/MultiDropdown", "src/Components/MultiDropdown.luau"),
-    ("Components/TextBox", "src/Components/TextBox.luau"),
-    ("Components/Keybind", "src/Components/Keybind.luau"),
-    ("Components/ColorPicker", "src/Components/ColorPicker.luau"),
-    ("Components/Label", "src/Components/Label.luau"),
-    ("Components/Paragraph", "src/Components/Paragraph.luau"),
-    ("UI/TopBar", "src/UI/TopBar.luau"),
-    ("UI/Sidebar", "src/UI/Sidebar.luau"),
-    ("UI/Section", "src/UI/Section.luau"),
-    ("UI/Tab", "src/UI/Tab.luau"),
-    ("UI/Notifications", "src/UI/Notifications.luau"),
-    ("UI/Window", "src/UI/Window.luau"),
-    ("Library", "src/Library.luau"),
+    ("Assets", "src/Assets.lua"),
+    ("Theme", "src/Theme.lua"),
+    ("Animation", "src/Animation.lua"),
+    ("Utility", "src/Utility.lua"),
+    ("Components/Button", "src/Components/Button.lua"),
+    ("Components/Toggle", "src/Components/Toggle.lua"),
+    ("Components/Slider", "src/Components/Slider.lua"),
+    ("Components/Dropdown", "src/Components/Dropdown.lua"),
+    ("Components/MultiDropdown", "src/Components/MultiDropdown.lua"),
+    ("Components/TextBox", "src/Components/TextBox.lua"),
+    ("Components/Keybind", "src/Components/Keybind.lua"),
+    ("Components/ColorPicker", "src/Components/ColorPicker.lua"),
+    ("Components/Label", "src/Components/Label.lua"),
+    ("Components/Paragraph", "src/Components/Paragraph.lua"),
+    ("UI/TopBar", "src/UI/TopBar.lua"),
+    ("UI/Sidebar", "src/UI/Sidebar.lua"),
+    ("UI/Section", "src/UI/Section.lua"),
+    ("UI/Tab", "src/UI/Tab.lua"),
+    ("UI/Notifications", "src/UI/Notifications.lua"),
+    ("UI/Window", "src/UI/Window.lua"),
+    ("Library", "src/Library.lua"),
 ]
 
 bundle_lines = [
@@ -74,7 +74,7 @@ bundle_lines.append("local Library = import(\"Library\")")
 bundle_lines.append("return Library.init(import)")
 
 bundle_content = "\n".join(bundle_lines)
-dist_path = os.path.join(BASE_DIR, "dist", "bundle.luau")
+dist_path = os.path.join(BASE_DIR, "dist", "bundle.lua")
 os.makedirs(os.path.dirname(dist_path), exist_ok=True)
 with open(dist_path, "w", encoding="utf-8") as f:
     f.write(bundle_content)
