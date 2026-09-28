@@ -66,6 +66,7 @@ function Library.init(import)
     self.Windows = {}
     self.NotificationSystem = nil
     
+    print("[UniversalUI] Framework initialized successfully! (v1.0.0)")
     return self
 end
 

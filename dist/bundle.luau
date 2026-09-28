@@ -505,15 +505,20 @@ function Utility.GetGuiParent()
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
     
-    local success, _ = pcall(function()
-        local _ = CoreGui.Name
+    local testWritable = false
+    pcall(function()
+        local test = Instance.new("Folder")
+        test.Parent = CoreGui
+        test.Parent = nil
+        testWritable = true
     end)
-    if success then
+    if testWritable then
         return CoreGui
     end
     
-    if LocalPlayer and LocalPlayer:FindFirstChildOfClass("PlayerGui") then
-        return LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    if LocalPlayer then
+        local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 4)
+        if pGui then return pGui end
     end
     
     return CoreGui
@@ -3434,13 +3439,31 @@ function Window.new(config, modules)
     
     -- Root ScreenGui
     local guiParent = modules.Utility.GetGuiParent()
-    self.ScreenGui = self.Utility.Create("ScreenGui", {
+    local screenGui = self.Utility.Create("ScreenGui", {
         Name = "UniversalUI_" .. (config.Title or "Window"),
         ResetOnSpawn = false,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
         DisplayOrder = 100,
-        Parent = guiParent,
     })
+    
+    if syn and syn.protect_gui then
+        pcall(syn.protect_gui, screenGui)
+    end
+    
+    local parented = false
+    pcall(function()
+        screenGui.Parent = guiParent
+        parented = true
+    end)
+    if not parented then
+        pcall(function()
+            local Players = game:GetService("Players")
+            if Players.LocalPlayer then
+                screenGui.Parent = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+            end
+        end)
+    end
+    self.ScreenGui = screenGui
     
     -- Main Window Frame (Glassmorphism card)
     local viewport = self.Utility.GetViewportSize()
@@ -3459,7 +3482,7 @@ function Window.new(config, modules)
         BackgroundColor3 = self.Theme:Get("Background"),
         BackgroundTransparency = self.Theme:Get("Transparency"),
         BorderSizePixel = 0,
-        GroupTransparency = 1,
+        GroupTransparency = 0,
         ClipsDescendants = true,
         Parent = self.ScreenGui,
     })
@@ -3766,6 +3789,7 @@ function Library.init(import)
     self.Windows = {}
     self.NotificationSystem = nil
     
+    print("[UniversalUI] Framework initialized successfully! (v1.0.0)")
     return self
 end
 

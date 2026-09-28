@@ -171,15 +171,20 @@ function Utility.GetGuiParent()
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
     
-    local success, _ = pcall(function()
-        local _ = CoreGui.Name
+    local testWritable = false
+    pcall(function()
+        local test = Instance.new("Folder")
+        test.Parent = CoreGui
+        test.Parent = nil
+        testWritable = true
     end)
-    if success then
+    if testWritable then
         return CoreGui
     end
     
-    if LocalPlayer and LocalPlayer:FindFirstChildOfClass("PlayerGui") then
-        return LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    if LocalPlayer then
+        local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 4)
+        if pGui then return pGui end
     end
     
     return CoreGui

@@ -26,13 +26,31 @@ function Window.new(config, modules)
     
     -- Root ScreenGui
     local guiParent = modules.Utility.GetGuiParent()
-    self.ScreenGui = self.Utility.Create("ScreenGui", {
+    local screenGui = self.Utility.Create("ScreenGui", {
         Name = "UniversalUI_" .. (config.Title or "Window"),
         ResetOnSpawn = false,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
         DisplayOrder = 100,
-        Parent = guiParent,
     })
+    
+    if syn and syn.protect_gui then
+        pcall(syn.protect_gui, screenGui)
+    end
+    
+    local parented = false
+    pcall(function()
+        screenGui.Parent = guiParent
+        parented = true
+    end)
+    if not parented then
+        pcall(function()
+            local Players = game:GetService("Players")
+            if Players.LocalPlayer then
+                screenGui.Parent = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+            end
+        end)
+    end
+    self.ScreenGui = screenGui
     
     -- Main Window Frame (Glassmorphism card)
     local viewport = self.Utility.GetViewportSize()
@@ -51,7 +69,7 @@ function Window.new(config, modules)
         BackgroundColor3 = self.Theme:Get("Background"),
         BackgroundTransparency = self.Theme:Get("Transparency"),
         BorderSizePixel = 0,
-        GroupTransparency = 1,
+        GroupTransparency = 0,
         ClipsDescendants = true,
         Parent = self.ScreenGui,
     })
