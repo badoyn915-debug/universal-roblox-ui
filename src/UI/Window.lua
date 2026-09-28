@@ -2,11 +2,13 @@ local math_clamp = math.clamp or function(v, min, max) return math.max(min, math
 --[=[
     Window UI Component
     Top-level window managing TopBar, Sidebar, Tab pages, Dragging, Screen Bounds Clamping,
-    Minimization pill, and Mobile Responsive Scaling.
+    Minimization pill, Mobile Floating Toggle Button (FAB), Lighting Blur Effect,
+    and Mobile Responsive Scaling.
 ]=]
 
 local UserInputService = game and game:GetService("UserInputService")
 local Workspace = game and game:GetService("Workspace")
+local Lighting = game and game:GetService("Lighting")
 
 local Window = {}
 Window.__index = Window
@@ -23,6 +25,7 @@ function Window.new(config, modules)
     self.Tabs = {}
     self.CurrentTab = nil
     self.IsMinimized = false
+    self.IsOpen = true
     
     -- Root ScreenGui
     local guiParent = modules.Utility.GetGuiParent()
@@ -52,6 +55,24 @@ function Window.new(config, modules)
     end
     self.ScreenGui = screenGui
     
+    -- Lighting Blur Effect (for authentic frosted glass backdrop)
+    local blurEffect = nil
+    if Lighting then
+        pcall(function()
+            blurEffect = Lighting:FindFirstChild("UniversalUI_Blur")
+            if not blurEffect then
+                blurEffect = Instance.new("BlurEffect")
+                blurEffect.Name = "UniversalUI_Blur"
+                blurEffect.Size = 16
+                blurEffect.Enabled = true
+                blurEffect.Parent = Lighting
+            else
+                blurEffect.Enabled = true
+            end
+        end)
+    end
+    self.BlurEffect = blurEffect
+    
     -- Main Window Frame (Glassmorphism card)
     local viewport = self.Utility.GetViewportSize()
     local isMobile = self.Utility.IsMobile() or (viewport.X < 650)
@@ -67,15 +88,31 @@ function Window.new(config, modules)
         Size = self.NormalSize,
         Position = self.NormalPosition,
         BackgroundColor3 = self.Theme:Get("Background"),
-        BackgroundTransparency = self.Theme:Get("Transparency"),
+        BackgroundTransparency = self.Theme:Get("GlassTransparency") or 0.35,
         BorderSizePixel = 0,
         GroupTransparency = 0,
         ClipsDescendants = true,
         Parent = self.ScreenGui,
     })
     self.Utility.AddCorner(self.MainFrame, 16)
-    self.Utility.AddStroke(self.MainFrame, self.Theme:Get("Border"), 1, self.Theme:Get("BorderTransparency"))
+    self.Utility.AddStroke(self.MainFrame, self.Theme:Get("Border"), 1.2, self.Theme:Get("BorderTransparency") or 0.8)
     self.Theme:Register(self.MainFrame, { BackgroundColor3 = "Background" })
+    
+    -- Subtle frosted glass sheen gradient
+    local glassSheen = self.Utility.Create("UIGradient", {
+        Name = "GlassSheen",
+        Rotation = 45,
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.1),
+            NumberSequenceKeypoint.new(0.5, 0.25),
+            NumberSequenceKeypoint.new(1, 0.4),
+        }),
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 220, 250)),
+        }),
+        Parent = self.MainFrame,
+    })
     
     -- Mobile Responsive Scaling (UIScale)
     local uiScale = self.Utility.Create("UIScale", {
@@ -100,26 +137,75 @@ function Window.new(config, modules)
         self.Utility.AddConnection(Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale))
     end
     
-    -- Minimize Floating Pill Frame
+    -- Mobile Floating Action Button (FAB) Toggle (Always accessible on touch devices)
+    local rawLogo = self.Assets.Logo or self.Assets.MainIcon
+    local logoIcon = (self.Assets.Resolve and self.Assets.Resolve(rawLogo)) or rawLogo
+    
+    local mobileFab = self.Utility.Create("Frame", {
+        Name = "MobileToggleFAB",
+        Size = UDim2.new(0, 46, 0, 46),
+        Position = UDim2.new(0, 16, 0.5, -23),
+        BackgroundColor3 = self.Theme:Get("Surface"),
+        BackgroundTransparency = 0.2,
+        BorderSizePixel = 0,
+        ZIndex = 500,
+        Visible = true,
+        Parent = self.ScreenGui,
+    })
+    self.Utility.AddCorner(mobileFab, 23)
+    local fabStroke = self.Utility.AddStroke(mobileFab, self.Theme:Get("Accent"), 1.8, 0.3)
+    self.Theme:Register(mobileFab, { BackgroundColor3 = "Surface" })
+    self.Theme:Register(fabStroke, { Color = "Accent" })
+    
+    local fabIcon = self.Utility.Create("ImageLabel", {
+        Name = "Icon",
+        Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Image = logoIcon,
+        ImageColor3 = self.Theme:Get("Accent"),
+        ScaleType = Enum.ScaleType.Fit,
+        Parent = mobileFab,
+    })
+    self.Theme:Register(fabIcon, { ImageColor3 = "Accent" })
+    
+    local fabClick = self.Utility.Create("TextButton", {
+        Name = "ClickTrigger",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        Parent = mobileFab,
+    })
+    
+    -- Enable dragging on the mobile button with screen boundary clamping
+    self.Utility.MakeDraggable(mobileFab, fabClick)
+    
+    self.Utility.AddConnection(fabClick.MouseButton1Click:Connect(function()
+        self:ToggleVisibility()
+    end))
+    self.MobileFab = mobileFab
+    
+    -- Minimize Floating Pill Frame (collapsible desktop dock)
     self.PillFrame = self.Utility.Create("Frame", {
         Name = "MinimizedPill",
-        Size = UDim2.new(0, 110, 0, 36),
-        Position = UDim2.new(0.5, -55, 0, 20),
+        Size = UDim2.new(0, 120, 0, 36),
+        Position = UDim2.new(0.5, -60, 0, 20),
         BackgroundColor3 = self.Theme:Get("Surface"),
-        BackgroundTransparency = 0.15,
+        BackgroundTransparency = 0.25,
         BorderSizePixel = 0,
         Visible = false,
         Parent = self.ScreenGui,
     })
     self.Utility.AddCorner(self.PillFrame, 18)
-    self.Utility.AddStroke(self.PillFrame, self.Theme:Get("Border"), 1, 0.85)
+    self.Utility.AddStroke(self.PillFrame, self.Theme:Get("Border"), 1, 0.8)
     self.Theme:Register(self.PillFrame, { BackgroundColor3 = "Surface" })
     
     local pillLayout = self.Utility.Create("UIListLayout", {
         FillDirection = Enum.FillDirection.Horizontal,
         VerticalAlignment = Enum.VerticalAlignment.Center,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
-        Padding = UDim.new(0, 6),
+        Padding = UDim.new(0, 8),
         Parent = self.PillFrame,
     })
     
@@ -240,6 +326,35 @@ function Window:SelectTab(tab, buttonData)
     tab:Show()
 end
 
+function Window:ToggleVisibility()
+    self.IsOpen = not self.IsOpen
+    
+    if self.IsOpen then
+        self.MainFrame.Visible = true
+        if self.BlurEffect then self.BlurEffect.Enabled = true end
+        self.Animation.Tween(self.MainFrame, self.Animation.Presets.Spring, {
+            GroupTransparency = 0,
+            Position = self.NormalPosition
+        })
+    else
+        self.NormalPosition = self.MainFrame.Position
+        local tween = self.Animation.Tween(self.MainFrame, self.Animation.Presets.Fast, {
+            GroupTransparency = 1,
+            Position = UDim2.new(self.NormalPosition.X.Scale, self.NormalPosition.X.Offset, 0, -50)
+        })
+        if self.BlurEffect then self.BlurEffect.Enabled = false end
+        if tween then
+            tween.Completed:Connect(function()
+                if not self.IsOpen then
+                    self.MainFrame.Visible = false
+                end
+            end)
+        else
+            self.MainFrame.Visible = false
+        end
+    end
+end
+
 function Window:ToggleMinimize()
     self.IsMinimized = not self.IsMinimized
     
@@ -249,13 +364,14 @@ function Window:ToggleMinimize()
             GroupTransparency = 1,
             Position = UDim2.new(self.NormalPosition.X.Scale, self.NormalPosition.X.Offset, 0, -50)
         })
+        if self.BlurEffect then self.BlurEffect.Enabled = false end
         if tween then
             tween.Completed:Connect(function()
                 self.MainFrame.Visible = false
                 self.PillFrame.Visible = true
-                self.PillFrame.Position = UDim2.new(0.5, -55, 0, -40)
+                self.PillFrame.Position = UDim2.new(0.5, -60, 0, -40)
                 self.Animation.Tween(self.PillFrame, self.Animation.Presets.Spring, {
-                    Position = UDim2.new(0.5, -55, 0, 20)
+                    Position = UDim2.new(0.5, -60, 0, 20)
                 })
             end)
         else
@@ -264,12 +380,13 @@ function Window:ToggleMinimize()
         end
     else
         local tween = self.Animation.Tween(self.PillFrame, self.Animation.Presets.Fast, {
-            Position = UDim2.new(0.5, -55, 0, -40)
+            Position = UDim2.new(0.5, -60, 0, -40)
         })
         if tween then
             tween.Completed:Connect(function()
                 self.PillFrame.Visible = false
                 self.MainFrame.Visible = true
+                if self.BlurEffect then self.BlurEffect.Enabled = true end
                 self.Animation.Tween(self.MainFrame, self.Animation.Presets.Spring, {
                     GroupTransparency = 0,
                     Position = self.NormalPosition
@@ -278,25 +395,34 @@ function Window:ToggleMinimize()
         else
             self.PillFrame.Visible = false
             self.MainFrame.Visible = true
+            if self.BlurEffect then self.BlurEffect.Enabled = true end
         end
     end
 end
 
 function Window:Close()
+    self.IsOpen = false
     local tween = self.Animation.Tween(self.MainFrame, self.Animation.Presets.Fast, {
         GroupTransparency = 1,
         Position = UDim2.new(self.MainFrame.Position.X.Scale, self.MainFrame.Position.X.Offset, 0.5, 50)
     })
+    if self.BlurEffect then self.BlurEffect.Enabled = false end
     if tween then
         tween.Completed:Connect(function()
-            self.ScreenGui.Enabled = false
+            self.MainFrame.Visible = false
         end)
     else
-        self.ScreenGui.Enabled = false
+        self.MainFrame.Visible = false
     end
 end
 
 function Window:Destroy()
+    if self.BlurEffect then
+        pcall(function()
+            self.BlurEffect:Destroy()
+        end)
+        self.BlurEffect = nil
+    end
     if self.ScreenGui then
         self.ScreenGui:Destroy()
     end

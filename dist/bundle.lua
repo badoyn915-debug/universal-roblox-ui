@@ -42,7 +42,8 @@ local function resolveAsset(pathOrUrl)
     if pathOrUrl:sub(1, 13) == "rbxassetid://" or pathOrUrl:sub(1, 10) == "rbxasset://" then
         return pathOrUrl
     end
-    if getcustomasset and (pathOrUrl:sub(1, 7) == "http://" or pathOrUrl:sub(1, 8) == "https://") then
+    if (getcustomasset or getsynasset) and (pathOrUrl:sub(1, 7) == "http://" or pathOrUrl:sub(1, 8) == "https://") then
+        local gca = getcustomasset or getsynasset
         local filename = "universal_ui_logo.png"
         if not isfile(filename) and writefile and game and game.HttpGet then
             pcall(function()
@@ -50,18 +51,46 @@ local function resolveAsset(pathOrUrl)
             end)
         end
         if isfile(filename) then
-            local success, asset = pcall(getcustomasset, filename)
+            local success, asset = pcall(gca, filename)
             if success and asset then return asset end
         end
+    end
+    -- Fallback to high-quality vector asset if http URL cannot be converted by executor
+    if pathOrUrl:sub(1, 4) == "http" then
+        return "rbxassetid://10709789710"
     end
     return pathOrUrl
 end
 
 local Assets = {
     -- User Custom Logo (placed in assets/logo.png)
-    Logo = "https://raw.githubusercontent.com/badoyn915-debug/universal-roblox-ui/main/assets/logo.png",
+    Logo = resolveAsset("https://raw.githubusercontent.com/badoyn915-debug/universal-roblox-ui/main/assets/logo.png"),
     MainIcon = "rbxassetid://10709789710", -- Layers glyph
     Settings = "rbxassetid://10734950309", -- Gear / settings
+    
+    -- Category & Tab Icons
+    Combat = "rbxassetid://10709791523",
+    Visuals = "rbxassetid://10723345518",
+    Eye = "rbxassetid://10723345518",
+    Movement = "rbxassetid://10747373176",
+    User = "rbxassetid://10747373176",
+    Home = "rbxassetid://10723415903",
+    Sliders = "rbxassetid://10734950020",
+    Target = "rbxassetid://10723343537",
+    Crosshair = "rbxassetid://10723343537",
+    Zap = "rbxassetid://10709810948",
+    Lightning = "rbxassetid://10709810948",
+    Shield = "rbxassetid://10734951847",
+    Palette = "rbxassetid://10723346959",
+    Keyboard = "rbxassetid://10723346158",
+    Key = "rbxassetid://10723346158",
+    Click = "rbxassetid://10723416496",
+    Cursor = "rbxassetid://10723416496",
+    Sparkles = "rbxassetid://10709782497",
+    Layers = "rbxassetid://10709789710",
+    Folder = "rbxassetid://10723346416",
+    Terminal = "rbxassetid://10734952815",
+    Tool = "rbxassetid://10734953683",
     
     -- Window Controls
     Close = "rbxassetid://10747384394", -- Cross / Close
@@ -109,16 +138,17 @@ local Theme = {}
 Theme.__index = Theme
 
 Theme.Defaults = {
-    Background = Color3.fromRGB(15, 17, 24),
-    Surface = Color3.fromRGB(24, 28, 42),
-    SurfaceSecondary = Color3.fromRGB(34, 40, 60),
-    Text = Color3.fromRGB(245, 247, 252),
-    TextSecondary = Color3.fromRGB(150, 160, 180),
+    Background = Color3.fromRGB(12, 14, 22),
+    Surface = Color3.fromRGB(18, 22, 36),
+    SurfaceSecondary = Color3.fromRGB(28, 34, 52),
+    Text = Color3.fromRGB(250, 252, 255),
+    TextSecondary = Color3.fromRGB(160, 172, 195),
     Accent = Color3.fromRGB(88, 101, 242),
     AccentHover = Color3.fromRGB(105, 118, 255),
     Border = Color3.fromRGB(255, 255, 255),
-    BorderTransparency = 0.88,
-    Transparency = 0.18,
+    BorderTransparency = 0.8,
+    Transparency = 0.42,
+    GlassTransparency = 0.35,
     Success = Color3.fromRGB(46, 213, 115),
     Warning = Color3.fromRGB(255, 171, 0),
     Error = Color3.fromRGB(255, 71, 87),
@@ -573,13 +603,44 @@ function Button.new(config, parent, Theme, Animation, Utility, Assets)
         Parent = row,
     })
     
-    -- Left text side
-    local textContainer = Utility.Create("Frame", {
-        Name = "TextContainer",
+    local leftContainer = Utility.Create("Frame", {
+        Name = "LeftContainer",
         Size = UDim2.new(1, -70, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         Parent = row,
+    })
+    
+    local leftLayout = Utility.Create("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 10),
+        Parent = leftContainer,
+    })
+    
+    local rawIcon = config.Icon
+    if rawIcon and Assets[rawIcon] then rawIcon = Assets[rawIcon] end
+    local iconId = (Assets.Resolve and Assets.Resolve(rawIcon)) or rawIcon
+    if iconId and iconId ~= "" then
+        local compIcon = Utility.Create("ImageLabel", {
+            Name = "Icon",
+            Size = UDim2.new(0, 18, 0, 18),
+            BackgroundTransparency = 1,
+            Image = iconId,
+            ImageColor3 = Theme:Get("Accent"),
+            ScaleType = Enum.ScaleType.Fit,
+            Parent = leftContainer,
+        })
+        Theme:Register(compIcon, { ImageColor3 = "Accent" })
+    end
+    
+    -- Left text side
+    local textContainer = Utility.Create("Frame", {
+        Name = "TextContainer",
+        Size = UDim2.new(1, (iconId and iconId ~= "") and -28 or 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        Parent = leftContainer,
     })
     
     local textLayout = Utility.Create("UIListLayout", {
@@ -739,13 +800,44 @@ function Toggle.new(config, parent, Theme, Animation, Utility, Assets)
         Parent = row,
     })
     
-    -- Left text side
-    local textContainer = Utility.Create("Frame", {
-        Name = "TextContainer",
+    local leftContainer = Utility.Create("Frame", {
+        Name = "LeftContainer",
         Size = UDim2.new(1, -60, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         Parent = row,
+    })
+    
+    local leftLayout = Utility.Create("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 10),
+        Parent = leftContainer,
+    })
+    
+    local rawIcon = config.Icon
+    if rawIcon and Assets[rawIcon] then rawIcon = Assets[rawIcon] end
+    local iconId = (Assets.Resolve and Assets.Resolve(rawIcon)) or rawIcon
+    if iconId and iconId ~= "" then
+        local compIcon = Utility.Create("ImageLabel", {
+            Name = "Icon",
+            Size = UDim2.new(0, 18, 0, 18),
+            BackgroundTransparency = 1,
+            Image = iconId,
+            ImageColor3 = Theme:Get("Accent"),
+            ScaleType = Enum.ScaleType.Fit,
+            Parent = leftContainer,
+        })
+        Theme:Register(compIcon, { ImageColor3 = "Accent" })
+    end
+    
+    -- Left text side
+    local textContainer = Utility.Create("Frame", {
+        Name = "TextContainer",
+        Size = UDim2.new(1, (iconId and iconId ~= "") and -28 or 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        Parent = leftContainer,
     })
     
     local textLayout = Utility.Create("UIListLayout", {
@@ -926,12 +1018,43 @@ function Slider.new(config, parent, Theme, Animation, Utility, Assets)
         Parent = headerRow,
     })
     
-    local textContainer = Utility.Create("Frame", {
-        Name = "TextContainer",
+    local leftContainer = Utility.Create("Frame", {
+        Name = "LeftContainer",
         Size = UDim2.new(1, -60, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         Parent = headerRow,
+    })
+    
+    local leftLayout = Utility.Create("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 10),
+        Parent = leftContainer,
+    })
+    
+    local rawIcon = config.Icon
+    if rawIcon and Assets[rawIcon] then rawIcon = Assets[rawIcon] end
+    local iconId = (Assets.Resolve and Assets.Resolve(rawIcon)) or rawIcon
+    if iconId and iconId ~= "" then
+        local compIcon = Utility.Create("ImageLabel", {
+            Name = "Icon",
+            Size = UDim2.new(0, 18, 0, 18),
+            BackgroundTransparency = 1,
+            Image = iconId,
+            ImageColor3 = Theme:Get("Accent"),
+            ScaleType = Enum.ScaleType.Fit,
+            Parent = leftContainer,
+        })
+        Theme:Register(compIcon, { ImageColor3 = "Accent" })
+    end
+    
+    local textContainer = Utility.Create("Frame", {
+        Name = "TextContainer",
+        Size = UDim2.new(1, (iconId and iconId ~= "") and -28 or 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        Parent = leftContainer,
     })
     
     local titleLayout = Utility.Create("UIListLayout", {
@@ -1188,12 +1311,43 @@ function Dropdown.new(config, parent, Theme, Animation, Utility, Assets)
         Parent = mainRow,
     })
     
-    local textContainer = Utility.Create("Frame", {
-        Name = "TextContainer",
+    local leftContainer = Utility.Create("Frame", {
+        Name = "LeftContainer",
         Size = UDim2.new(1, -130, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         Parent = mainRow,
+    })
+    
+    local leftLayout = Utility.Create("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 10),
+        Parent = leftContainer,
+    })
+    
+    local rawIcon = config.Icon
+    if rawIcon and Assets[rawIcon] then rawIcon = Assets[rawIcon] end
+    local iconId = (Assets.Resolve and Assets.Resolve(rawIcon)) or rawIcon
+    if iconId and iconId ~= "" then
+        local compIcon = Utility.Create("ImageLabel", {
+            Name = "Icon",
+            Size = UDim2.new(0, 18, 0, 18),
+            BackgroundTransparency = 1,
+            Image = iconId,
+            ImageColor3 = Theme:Get("Accent"),
+            ScaleType = Enum.ScaleType.Fit,
+            Parent = leftContainer,
+        })
+        Theme:Register(compIcon, { ImageColor3 = "Accent" })
+    end
+    
+    local textContainer = Utility.Create("Frame", {
+        Name = "TextContainer",
+        Size = UDim2.new(1, (iconId and iconId ~= "") and -28 or 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        Parent = leftContainer,
     })
     
     local titleLayout = Utility.Create("UIListLayout", {
@@ -2814,10 +2968,34 @@ function Sidebar:AddTabButton(tabConfig, onClick)
     self.Utility.AddCorner(indicator, 2)
     self.Theme:Register(indicator, { BackgroundColor3 = "Accent" })
     
+    local rawIcon = tabConfig.Icon
+    if rawIcon and self.Assets[rawIcon] then
+        rawIcon = self.Assets[rawIcon]
+    end
+    if not rawIcon or rawIcon == "" then
+        rawIcon = self.Assets.MainIcon
+    end
+    local iconId = (self.Assets.Resolve and self.Assets.Resolve(rawIcon)) or rawIcon
+    
+    local iconImg = nil
+    if iconId and iconId ~= "" then
+        iconImg = self.Utility.Create("ImageLabel", {
+            Name = "TabIcon",
+            Size = UDim2.new(0, 18, 0, 18),
+            Position = UDim2.new(0, 12, 0.5, 0),
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundTransparency = 1,
+            Image = iconId,
+            ImageColor3 = self.Theme:Get("TextSecondary"),
+            ScaleType = Enum.ScaleType.Fit,
+            Parent = tabBtn,
+        })
+    end
+    
     local contentContainer = self.Utility.Create("Frame", {
         Name = "Content",
-        Size = UDim2.new(1, -16, 1, 0),
-        Position = UDim2.new(0, 14, 0, 0),
+        Size = UDim2.new(1, iconImg and -36 or -16, 1, 0),
+        Position = UDim2.new(0, iconImg and 34 or 14, 0, 0),
         BackgroundTransparency = 1,
         Parent = tabBtn,
     })
@@ -2895,6 +3073,11 @@ function Sidebar:AddTabButton(tabConfig, onClick)
                 self.Animation.Tween(titleLabel, self.Animation.Presets.Fast, {
                     TextColor3 = self.Theme:Get("Text")
                 })
+                if iconImg then
+                    self.Animation.Tween(iconImg, self.Animation.Presets.Fast, {
+                        ImageColor3 = self.Theme:Get("Accent")
+                    })
+                end
             else
                 self.Animation.Tween(tabBtn, self.Animation.Presets.Fast, {
                     BackgroundTransparency = 1
@@ -2905,6 +3088,11 @@ function Sidebar:AddTabButton(tabConfig, onClick)
                 self.Animation.Tween(titleLabel, self.Animation.Presets.Fast, {
                     TextColor3 = self.Theme:Get("TextSecondary")
                 })
+                if iconImg then
+                    self.Animation.Tween(iconImg, self.Animation.Presets.Fast, {
+                        ImageColor3 = self.Theme:Get("TextSecondary")
+                    })
+                end
             end
         end
     }
@@ -3415,11 +3603,13 @@ local math_clamp = math.clamp or function(v, min, max) return math.max(min, math
 --[=[
     Window UI Component
     Top-level window managing TopBar, Sidebar, Tab pages, Dragging, Screen Bounds Clamping,
-    Minimization pill, and Mobile Responsive Scaling.
+    Minimization pill, Mobile Floating Toggle Button (FAB), Lighting Blur Effect,
+    and Mobile Responsive Scaling.
 ]=]
 
 local UserInputService = game and game:GetService("UserInputService")
 local Workspace = game and game:GetService("Workspace")
+local Lighting = game and game:GetService("Lighting")
 
 local Window = {}
 Window.__index = Window
@@ -3436,6 +3626,7 @@ function Window.new(config, modules)
     self.Tabs = {}
     self.CurrentTab = nil
     self.IsMinimized = false
+    self.IsOpen = true
     
     -- Root ScreenGui
     local guiParent = modules.Utility.GetGuiParent()
@@ -3465,6 +3656,24 @@ function Window.new(config, modules)
     end
     self.ScreenGui = screenGui
     
+    -- Lighting Blur Effect (for authentic frosted glass backdrop)
+    local blurEffect = nil
+    if Lighting then
+        pcall(function()
+            blurEffect = Lighting:FindFirstChild("UniversalUI_Blur")
+            if not blurEffect then
+                blurEffect = Instance.new("BlurEffect")
+                blurEffect.Name = "UniversalUI_Blur"
+                blurEffect.Size = 16
+                blurEffect.Enabled = true
+                blurEffect.Parent = Lighting
+            else
+                blurEffect.Enabled = true
+            end
+        end)
+    end
+    self.BlurEffect = blurEffect
+    
     -- Main Window Frame (Glassmorphism card)
     local viewport = self.Utility.GetViewportSize()
     local isMobile = self.Utility.IsMobile() or (viewport.X < 650)
@@ -3480,15 +3689,31 @@ function Window.new(config, modules)
         Size = self.NormalSize,
         Position = self.NormalPosition,
         BackgroundColor3 = self.Theme:Get("Background"),
-        BackgroundTransparency = self.Theme:Get("Transparency"),
+        BackgroundTransparency = self.Theme:Get("GlassTransparency") or 0.35,
         BorderSizePixel = 0,
         GroupTransparency = 0,
         ClipsDescendants = true,
         Parent = self.ScreenGui,
     })
     self.Utility.AddCorner(self.MainFrame, 16)
-    self.Utility.AddStroke(self.MainFrame, self.Theme:Get("Border"), 1, self.Theme:Get("BorderTransparency"))
+    self.Utility.AddStroke(self.MainFrame, self.Theme:Get("Border"), 1.2, self.Theme:Get("BorderTransparency") or 0.8)
     self.Theme:Register(self.MainFrame, { BackgroundColor3 = "Background" })
+    
+    -- Subtle frosted glass sheen gradient
+    local glassSheen = self.Utility.Create("UIGradient", {
+        Name = "GlassSheen",
+        Rotation = 45,
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.1),
+            NumberSequenceKeypoint.new(0.5, 0.25),
+            NumberSequenceKeypoint.new(1, 0.4),
+        }),
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 220, 250)),
+        }),
+        Parent = self.MainFrame,
+    })
     
     -- Mobile Responsive Scaling (UIScale)
     local uiScale = self.Utility.Create("UIScale", {
@@ -3513,26 +3738,75 @@ function Window.new(config, modules)
         self.Utility.AddConnection(Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale))
     end
     
-    -- Minimize Floating Pill Frame
+    -- Mobile Floating Action Button (FAB) Toggle (Always accessible on touch devices)
+    local rawLogo = self.Assets.Logo or self.Assets.MainIcon
+    local logoIcon = (self.Assets.Resolve and self.Assets.Resolve(rawLogo)) or rawLogo
+    
+    local mobileFab = self.Utility.Create("Frame", {
+        Name = "MobileToggleFAB",
+        Size = UDim2.new(0, 46, 0, 46),
+        Position = UDim2.new(0, 16, 0.5, -23),
+        BackgroundColor3 = self.Theme:Get("Surface"),
+        BackgroundTransparency = 0.2,
+        BorderSizePixel = 0,
+        ZIndex = 500,
+        Visible = true,
+        Parent = self.ScreenGui,
+    })
+    self.Utility.AddCorner(mobileFab, 23)
+    local fabStroke = self.Utility.AddStroke(mobileFab, self.Theme:Get("Accent"), 1.8, 0.3)
+    self.Theme:Register(mobileFab, { BackgroundColor3 = "Surface" })
+    self.Theme:Register(fabStroke, { Color = "Accent" })
+    
+    local fabIcon = self.Utility.Create("ImageLabel", {
+        Name = "Icon",
+        Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Image = logoIcon,
+        ImageColor3 = self.Theme:Get("Accent"),
+        ScaleType = Enum.ScaleType.Fit,
+        Parent = mobileFab,
+    })
+    self.Theme:Register(fabIcon, { ImageColor3 = "Accent" })
+    
+    local fabClick = self.Utility.Create("TextButton", {
+        Name = "ClickTrigger",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        Parent = mobileFab,
+    })
+    
+    -- Enable dragging on the mobile button with screen boundary clamping
+    self.Utility.MakeDraggable(mobileFab, fabClick)
+    
+    self.Utility.AddConnection(fabClick.MouseButton1Click:Connect(function()
+        self:ToggleVisibility()
+    end))
+    self.MobileFab = mobileFab
+    
+    -- Minimize Floating Pill Frame (collapsible desktop dock)
     self.PillFrame = self.Utility.Create("Frame", {
         Name = "MinimizedPill",
-        Size = UDim2.new(0, 110, 0, 36),
-        Position = UDim2.new(0.5, -55, 0, 20),
+        Size = UDim2.new(0, 120, 0, 36),
+        Position = UDim2.new(0.5, -60, 0, 20),
         BackgroundColor3 = self.Theme:Get("Surface"),
-        BackgroundTransparency = 0.15,
+        BackgroundTransparency = 0.25,
         BorderSizePixel = 0,
         Visible = false,
         Parent = self.ScreenGui,
     })
     self.Utility.AddCorner(self.PillFrame, 18)
-    self.Utility.AddStroke(self.PillFrame, self.Theme:Get("Border"), 1, 0.85)
+    self.Utility.AddStroke(self.PillFrame, self.Theme:Get("Border"), 1, 0.8)
     self.Theme:Register(self.PillFrame, { BackgroundColor3 = "Surface" })
     
     local pillLayout = self.Utility.Create("UIListLayout", {
         FillDirection = Enum.FillDirection.Horizontal,
         VerticalAlignment = Enum.VerticalAlignment.Center,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
-        Padding = UDim.new(0, 6),
+        Padding = UDim.new(0, 8),
         Parent = self.PillFrame,
     })
     
@@ -3653,6 +3927,35 @@ function Window:SelectTab(tab, buttonData)
     tab:Show()
 end
 
+function Window:ToggleVisibility()
+    self.IsOpen = not self.IsOpen
+    
+    if self.IsOpen then
+        self.MainFrame.Visible = true
+        if self.BlurEffect then self.BlurEffect.Enabled = true end
+        self.Animation.Tween(self.MainFrame, self.Animation.Presets.Spring, {
+            GroupTransparency = 0,
+            Position = self.NormalPosition
+        })
+    else
+        self.NormalPosition = self.MainFrame.Position
+        local tween = self.Animation.Tween(self.MainFrame, self.Animation.Presets.Fast, {
+            GroupTransparency = 1,
+            Position = UDim2.new(self.NormalPosition.X.Scale, self.NormalPosition.X.Offset, 0, -50)
+        })
+        if self.BlurEffect then self.BlurEffect.Enabled = false end
+        if tween then
+            tween.Completed:Connect(function()
+                if not self.IsOpen then
+                    self.MainFrame.Visible = false
+                end
+            end)
+        else
+            self.MainFrame.Visible = false
+        end
+    end
+end
+
 function Window:ToggleMinimize()
     self.IsMinimized = not self.IsMinimized
     
@@ -3662,13 +3965,14 @@ function Window:ToggleMinimize()
             GroupTransparency = 1,
             Position = UDim2.new(self.NormalPosition.X.Scale, self.NormalPosition.X.Offset, 0, -50)
         })
+        if self.BlurEffect then self.BlurEffect.Enabled = false end
         if tween then
             tween.Completed:Connect(function()
                 self.MainFrame.Visible = false
                 self.PillFrame.Visible = true
-                self.PillFrame.Position = UDim2.new(0.5, -55, 0, -40)
+                self.PillFrame.Position = UDim2.new(0.5, -60, 0, -40)
                 self.Animation.Tween(self.PillFrame, self.Animation.Presets.Spring, {
-                    Position = UDim2.new(0.5, -55, 0, 20)
+                    Position = UDim2.new(0.5, -60, 0, 20)
                 })
             end)
         else
@@ -3677,12 +3981,13 @@ function Window:ToggleMinimize()
         end
     else
         local tween = self.Animation.Tween(self.PillFrame, self.Animation.Presets.Fast, {
-            Position = UDim2.new(0.5, -55, 0, -40)
+            Position = UDim2.new(0.5, -60, 0, -40)
         })
         if tween then
             tween.Completed:Connect(function()
                 self.PillFrame.Visible = false
                 self.MainFrame.Visible = true
+                if self.BlurEffect then self.BlurEffect.Enabled = true end
                 self.Animation.Tween(self.MainFrame, self.Animation.Presets.Spring, {
                     GroupTransparency = 0,
                     Position = self.NormalPosition
@@ -3691,25 +3996,34 @@ function Window:ToggleMinimize()
         else
             self.PillFrame.Visible = false
             self.MainFrame.Visible = true
+            if self.BlurEffect then self.BlurEffect.Enabled = true end
         end
     end
 end
 
 function Window:Close()
+    self.IsOpen = false
     local tween = self.Animation.Tween(self.MainFrame, self.Animation.Presets.Fast, {
         GroupTransparency = 1,
         Position = UDim2.new(self.MainFrame.Position.X.Scale, self.MainFrame.Position.X.Offset, 0.5, 50)
     })
+    if self.BlurEffect then self.BlurEffect.Enabled = false end
     if tween then
         tween.Completed:Connect(function()
-            self.ScreenGui.Enabled = false
+            self.MainFrame.Visible = false
         end)
     else
-        self.ScreenGui.Enabled = false
+        self.MainFrame.Visible = false
     end
 end
 
 function Window:Destroy()
+    if self.BlurEffect then
+        pcall(function()
+            self.BlurEffect:Destroy()
+        end)
+        self.BlurEffect = nil
+    end
     if self.ScreenGui then
         self.ScreenGui:Destroy()
     end

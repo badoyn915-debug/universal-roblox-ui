@@ -80,10 +80,34 @@ function Sidebar:AddTabButton(tabConfig, onClick)
     self.Utility.AddCorner(indicator, 2)
     self.Theme:Register(indicator, { BackgroundColor3 = "Accent" })
     
+    local rawIcon = tabConfig.Icon
+    if rawIcon and self.Assets[rawIcon] then
+        rawIcon = self.Assets[rawIcon]
+    end
+    if not rawIcon or rawIcon == "" then
+        rawIcon = self.Assets.MainIcon
+    end
+    local iconId = (self.Assets.Resolve and self.Assets.Resolve(rawIcon)) or rawIcon
+    
+    local iconImg = nil
+    if iconId and iconId ~= "" then
+        iconImg = self.Utility.Create("ImageLabel", {
+            Name = "TabIcon",
+            Size = UDim2.new(0, 18, 0, 18),
+            Position = UDim2.new(0, 12, 0.5, 0),
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundTransparency = 1,
+            Image = iconId,
+            ImageColor3 = self.Theme:Get("TextSecondary"),
+            ScaleType = Enum.ScaleType.Fit,
+            Parent = tabBtn,
+        })
+    end
+    
     local contentContainer = self.Utility.Create("Frame", {
         Name = "Content",
-        Size = UDim2.new(1, -16, 1, 0),
-        Position = UDim2.new(0, 14, 0, 0),
+        Size = UDim2.new(1, iconImg and -36 or -16, 1, 0),
+        Position = UDim2.new(0, iconImg and 34 or 14, 0, 0),
         BackgroundTransparency = 1,
         Parent = tabBtn,
     })
@@ -161,6 +185,11 @@ function Sidebar:AddTabButton(tabConfig, onClick)
                 self.Animation.Tween(titleLabel, self.Animation.Presets.Fast, {
                     TextColor3 = self.Theme:Get("Text")
                 })
+                if iconImg then
+                    self.Animation.Tween(iconImg, self.Animation.Presets.Fast, {
+                        ImageColor3 = self.Theme:Get("Accent")
+                    })
+                end
             else
                 self.Animation.Tween(tabBtn, self.Animation.Presets.Fast, {
                     BackgroundTransparency = 1
@@ -171,6 +200,11 @@ function Sidebar:AddTabButton(tabConfig, onClick)
                 self.Animation.Tween(titleLabel, self.Animation.Presets.Fast, {
                     TextColor3 = self.Theme:Get("TextSecondary")
                 })
+                if iconImg then
+                    self.Animation.Tween(iconImg, self.Animation.Presets.Fast, {
+                        ImageColor3 = self.Theme:Get("TextSecondary")
+                    })
+                end
             end
         end
     }

@@ -41,13 +41,44 @@ function Button.new(config, parent, Theme, Animation, Utility, Assets)
         Parent = row,
     })
     
-    -- Left text side
-    local textContainer = Utility.Create("Frame", {
-        Name = "TextContainer",
+    local leftContainer = Utility.Create("Frame", {
+        Name = "LeftContainer",
         Size = UDim2.new(1, -70, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         Parent = row,
+    })
+    
+    local leftLayout = Utility.Create("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 10),
+        Parent = leftContainer,
+    })
+    
+    local rawIcon = config.Icon
+    if rawIcon and Assets[rawIcon] then rawIcon = Assets[rawIcon] end
+    local iconId = (Assets.Resolve and Assets.Resolve(rawIcon)) or rawIcon
+    if iconId and iconId ~= "" then
+        local compIcon = Utility.Create("ImageLabel", {
+            Name = "Icon",
+            Size = UDim2.new(0, 18, 0, 18),
+            BackgroundTransparency = 1,
+            Image = iconId,
+            ImageColor3 = Theme:Get("Accent"),
+            ScaleType = Enum.ScaleType.Fit,
+            Parent = leftContainer,
+        })
+        Theme:Register(compIcon, { ImageColor3 = "Accent" })
+    end
+    
+    -- Left text side
+    local textContainer = Utility.Create("Frame", {
+        Name = "TextContainer",
+        Size = UDim2.new(1, (iconId and iconId ~= "") and -28 or 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        Parent = leftContainer,
     })
     
     local textLayout = Utility.Create("UIListLayout", {
