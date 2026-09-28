@@ -1,0 +1,10 @@
+# Ignore system files
+.DS_Store
+*.tmp
+*.log
+__pycache__/
+*.pyc
+
+# Local test scripts
+test_*.lua
+test_*.luau
