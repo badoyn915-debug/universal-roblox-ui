@@ -92,34 +92,13 @@ function Utility.IsMobile()
     return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 end
 
--- Screen-constrained Draggable Implementation (Mouse + Touch)
+-- Universal Draggable Implementation (Mouse + Touch anywhere on screen)
 function Utility.MakeDraggable(frame, dragHandle)
     dragHandle = dragHandle or frame
     
     local dragging = false
-    local dragInput = nil
     local dragStart = nil
     local startPos = nil
-    
-    local function update(input)
-        local delta = input.Position - dragStart
-        local viewport = Utility.GetViewportSize()
-        
-        -- Clamping calculation to keep the window fully within screen boundaries
-        local frameSize = frame.AbsoluteSize
-        local newX = math_clamp(startPos.X.Offset + delta.X, 0, math.max(0, viewport.X - frameSize.X))
-        local newY = math_clamp(startPos.Y.Offset + delta.Y, 0, math.max(0, viewport.Y - frameSize.Y))
-        
-        local targetPosition = UDim2.new(startPos.X.Scale, newX, startPos.Y.Scale, newY)
-        
-        if TweenService then
-            TweenService:Create(frame, TweenInfo.new(0.08, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Position = targetPosition
-            }):Play()
-        else
-            frame.Position = targetPosition
-        end
-    end
     
     local beganConn = dragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -127,33 +106,39 @@ function Utility.MakeDraggable(frame, dragHandle)
             dragStart = input.Position
             startPos = frame.Position
             
-            local changedConn
-            changedConn = input.Changed:Connect(function()
+            local inputEndedConn
+            inputEndedConn = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
-                    if changedConn then
-                        changedConn:Disconnect()
+                    if inputEndedConn then
+                        inputEndedConn:Disconnect()
                     end
                 end
             end)
-            Utility.AddConnection(changedConn)
+            Utility.AddConnection(inputEndedConn)
         end
     end)
     Utility.AddConnection(beganConn)
     
-    local inputChangedConn = dragHandle.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-    Utility.AddConnection(inputChangedConn)
-    
     local globalChangedConn = UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
         end
     end)
     Utility.AddConnection(globalChangedConn)
+    
+    local globalEndedConn = UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+    Utility.AddConnection(globalEndedConn)
 end
 
 function Utility.Round(num, decimals)
